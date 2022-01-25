@@ -67,7 +67,7 @@ class GDR(object):
         """
         Extracting data from datasets and loading to the class
         """
-        if self.dataset == 'cora-dr' or self.dataset == 'cora-d':
+        if self.dataset in ['cora-dr', 'cora-d']:
             adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_directed_data()
             self.directed = True
         else:
@@ -77,7 +77,7 @@ class GDR(object):
             self.A = sc.sparse.csr_matrix(adj, dtype=np.float64).T     
         else:
             self.A = sc.sparse.csr_matrix(adj, dtype=np.float64)
-            
+
 
 
         self.feature_data      = sc.sparse.csr_matrix(features, dtype=np.float64)
@@ -106,11 +106,11 @@ class GDR(object):
         """
 
         if tpe == 'mlp': #use MLP for the prior distribution
-            if self.dataset == 'cora-d' or self.dataset == 'cora-dr':
+            if self.dataset in ['cora-d', 'cora-dr']:
                 self.similarity_orig = define_MLP_distribution('cora', directed = True)
             else:
                 self.similarity_orig = define_MLP_distribution(self.dataset)
-            
+
         elif tpe == 'cos':
             #calculating the cosine similarity between each node and the features that describe each community
             self.similarity_orig = cosine_similarity(self.feature_data.toarray(), self.comm_features.toarray())

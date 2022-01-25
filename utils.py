@@ -79,12 +79,14 @@ def preprocess_adj(adj):
 
 def construct_feed_dict(features, support, labels, labels_mask, placeholders):
     """Construct feed dictionary."""
-    feed_dict = dict()
-    feed_dict.update({placeholders['labels']: labels})
-    feed_dict.update({placeholders['labels_mask']: labels_mask})
-    feed_dict.update({placeholders['features']: features})
+    feed_dict = {
+        placeholders['labels']: labels,
+        placeholders['labels_mask']: labels_mask,
+        placeholders['features']: features,
+    }
+
     feed_dict.update({placeholders['support'][i]: support[i] for i in range(len(support))})
-    feed_dict.update({placeholders['num_features_nonzero']: features[1].shape})
+    feed_dict[placeholders['num_features_nonzero']] = features[1].shape
     return feed_dict
 
 
@@ -129,8 +131,8 @@ def define_MLP_distribution(dataset, directed = False):
 	tf.set_random_seed(seed)
 	
 	def del_all_flags(FLAGS):
-	    flags_dict = FLAGS._flags()    
-	    keys_list = [keys for keys in flags_dict]    
+	    flags_dict = FLAGS._flags()
+	    keys_list = list(flags_dict)
 	    for keys in keys_list:
 	        FLAGS.__delattr__(keys)
 	
@@ -241,10 +243,7 @@ def define_MLP_distribution(dataset, directed = False):
 
 def parse_index_file(filename):
     """Parse index file."""
-    index = []
-    for line in open(filename):
-        index.append(int(line.strip()))
-    return index
+    return [int(line.strip()) for line in open(filename)]
 
 
 def sample_mask(idx, l):
@@ -258,9 +257,8 @@ def encode_onehot(labels):
     classes = set(labels)
     classes_dict = {c: np.identity(len(classes))[i, :] for i, c in
                     enumerate(classes)}
-    labels_onehot = np.array(list(map(classes_dict.get, labels)),
+    return np.array(list(map(classes_dict.get, labels)),
                              dtype=np.int32)
-    return labels_onehot
 
 
 def load_directed_data(path="data/", dataset="cora"):
@@ -316,8 +314,8 @@ def load_data(dataset_str, complete=False, random_graph=False, featureless=False
     """Load data."""
     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
     objects = []
-    for i in range(len(names)):
-        with open("data/ind.{}.{}".format(dataset_str, names[i]), 'rb') as f:
+    for name in names:
+        with open("data/ind.{}.{}".format(dataset_str, name), 'rb') as f:
             if sys.version_info > (3, 0):
                 objects.append(pkl.load(f, encoding='latin1'))
             else:
@@ -327,8 +325,13 @@ def load_data(dataset_str, complete=False, random_graph=False, featureless=False
     test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
     test_idx_range = np.sort(test_idx_reorder)
 
-    if dataset_str == 'citeseer' or dataset_str == 'nell.0.1' \
-            or dataset_str == 'nell.0.01' or dataset_str == 'nell.0.001' or dataset_str == 'wikipedia':
+    if dataset_str in [
+        'citeseer',
+        'nell.0.1',
+        'nell.0.01',
+        'nell.0.001',
+        'wikipedia',
+    ]:
         # Fix citeseer and NELL datasets (there are some isolated nodes in the graph)
         # Find isolated nodes, add them as zero-vecs into the right position
         test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
@@ -385,10 +388,10 @@ def load_data(dataset_str, complete=False, random_graph=False, featureless=False
     y_train[train_mask, :] = labels[train_mask, :]
     y_val[val_mask, :] = labels[val_mask, :]
     y_test[test_mask, :] = labels[test_mask, :]
-	
 
-		
-		
+
+
+
     return adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
 
 
@@ -586,10 +589,7 @@ def _transition_matrix(G, nodelist=None, weight='weight',
     from scipy.sparse import identity, spdiags
     if walk_type is None:
         if nx.is_strongly_connected(G):
-            if nx.is_aperiodic(G):
-                walk_type = "random"
-            else:
-                walk_type = "lazy"
+            walk_type = "random" if nx.is_aperiodic(G) else "lazy"
         else:
             walk_type = "pagerank"
 

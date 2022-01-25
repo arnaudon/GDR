@@ -1,19 +1,7 @@
 import numpy as np
 import sys
 
-#which dataset
-#dataset = 'cora'
-dataset = 'cora-d'
-#dataset = 'cora-dr'
-
-#dataset = 'citeseer'
-#dataset = 'pubmed'
-#dataset = 'wikipedia'
-
-if len(sys.argv)>0:
-    dataset = sys.argv[-1]
-
-
+dataset = sys.argv[-1] if len(sys.argv)>0 else 'cora-d'
 #which prior distribution, cosine similarity or MLP
 tpe_prior    = 'cos' #or 'mlp' 
 
